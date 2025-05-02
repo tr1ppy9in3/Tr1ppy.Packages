@@ -126,4 +126,53 @@ public static class ILoggerLocalizedExtensions
         var message = localizer[key, args];
         logger.LogWarning(message, args);
     }
+
+    public static void LogError<T>
+    (
+        this ILogger<T> logger,
+        IStringLocalizer localizer,
+        Enum key,
+        params object[] args
+    )
+    {
+        var message = localizer[key.ToString(), args];
+        logger.LogError(message, args);
+    }
+    public static void LogError<T>
+    (
+        this ILogger<T> logger,
+        IStringLocalizer localizer,
+        string key,
+        params object[] args
+    )
+    {
+        var message = localizer[key, args];
+        logger.LogError(message, args);
+    }
+    public static void LogError<T>
+    (
+        this ILogger<T> logger,
+        IStringLocalizer localizer,
+        Enum key,
+        Exception exception,
+        params object[] args
+    )
+    {
+        var message = localizer[key.ToString(), args];
+        logger.LogError(message, exception, args);
+    }
+
+    public static void LogError<T>
+    (
+        this ILogger<T> logger,
+        IStringLocalizer localizer,
+        string key,
+        Exception exception,
+        params object[] args
+    )
+    {
+        var message = localizer[key, args];
+        logger.LogError(message, exception, args);
+    }
+
 }
