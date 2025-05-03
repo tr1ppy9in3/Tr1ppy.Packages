@@ -1,11 +1,12 @@
-﻿using System.Security.Cryptography;
+﻿using Microsoft.Extensions.Options;
+using System.Security.Cryptography;
 
 namespace Tr1ppy.Cryptography.Password;
 
-public class PasswordCryptographyService(HashPasswordSettings settings)
+public class PasswordCryptographyService(IOptions<HashPasswordSettings> options)
 {
-    private readonly HashPasswordSettings _settings = settings
-        ?? throw new ArgumentNullException(nameof(settings));
+    private readonly HashPasswordSettings _settings = options.Value
+        ?? throw new ArgumentNullException(nameof(options));
 
     public string HashPassword(string password)
     {
