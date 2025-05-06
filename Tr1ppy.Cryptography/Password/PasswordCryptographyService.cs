@@ -60,11 +60,11 @@ public class PasswordCryptographyService(IOptions<HashPasswordSettings> options)
 
 public class HashPasswordSettings
 {
-    public required HashAlgorithmName HashAlgorithm { get; set; }
+    public HashAlgorithmName HashAlgorithm { get; set; }
 
-    public required int HashSize { get; set; }
+    public int HashSize { get; set; }
 
-    public required int SaltSize { get; set; }
+    public int SaltSize { get; set; }
 
-    public required int IterationsCount { get; set; }
+    public int IterationsCount { get; set; }
 }

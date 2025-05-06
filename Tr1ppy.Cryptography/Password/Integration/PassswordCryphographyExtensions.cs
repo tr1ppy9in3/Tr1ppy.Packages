@@ -10,7 +10,7 @@ public static class PasswordCryptographyExtensions
         Action<HashPasswordSettings> configure
     )
     {
-        services.Configure(configure);
+        services.Configure<HashPasswordSettings>(configure);
         services.AddSingleton<PasswordCryptographyService>();
         return services;
     }
