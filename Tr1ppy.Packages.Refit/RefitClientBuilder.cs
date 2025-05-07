@@ -3,11 +3,13 @@ using Microsoft.Extensions.Configuration;
 
 namespace Tr1ppy.Packages.Refit;
 
-public abstract class RefitClientBuilder<TClient, TBuilder>
+public abstract class RefitClientBuilder<TClient, TBuilder, TDependencyResolver>
     where TClient : class
-    where TBuilder: RefitClientBuilder<TClient, TBuilder>
+    where TBuilder: RefitClientBuilder<TClient, TBuilder, TDependencyResolver>
 {
     #region Fields
+
+    protected TDependencyResolver _dependencyResolver
 
     protected string? _httpClientName = default;
     protected Action<HttpClient>? _configureHttpClient = default;
@@ -17,6 +19,11 @@ public abstract class RefitClientBuilder<TClient, TBuilder>
     protected string? _connectionStringKey = default;
 
     #endregion
+
+    protected RefitClientBuilder(TDependencyResolver dependencyResolver)
+    {
+        _dependencyResolver = dependencyResolver;
+    }
 
     #region Fluent API
 
@@ -51,6 +58,8 @@ public abstract class RefitClientBuilder<TClient, TBuilder>
     }
 
     #endregion
+
+    public abstract TDependencyResolver Register();
 
     protected HttpClient CreateHttpClient(IHttpClientFactory httpClientFactory)
     {

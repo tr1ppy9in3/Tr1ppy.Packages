@@ -7,20 +7,13 @@ namespace Tr1ppy.Refit.Autofac;
 
 using Packages.Refit;
 
-public class IServiceCollectionRefitClientBuilder<TClient> 
-    : RefitClientBuilder<TClient, IServiceCollectionRefitClientBuilder<TClient>>
+public class IServiceCollectionRefitClientBuilder<TClient>(IServiceCollection serviceCollection)
+    : RefitClientBuilder<TClient, IServiceCollectionRefitClientBuilder<TClient>, IServiceCollection>(serviceCollection)
         where TClient : class
 {
-    private readonly IServiceCollection _serviceCollection;
-
-    public IServiceCollectionRefitClientBuilder(IServiceCollection serviceCollection)
+    public override IServiceCollection Register()
     {
-        _serviceCollection = serviceCollection;
-    }
-
-    public IServiceCollection Register()
-    {
-        return _serviceCollection.AddScoped(serviceProvider =>
+        return _dependencyResolver.AddScoped(serviceProvider =>
         {
             var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
             var httpClient = CreateHttpClient(httpClientFactory);

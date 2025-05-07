@@ -7,23 +7,16 @@ namespace Tr1ppy.Refit.Autofac;
 
 using Packages.Refit;
 
-public class AutofacRefitClientBuilder<TClient> 
-    : RefitClientBuilder<TClient, AutofacRefitClientBuilder<TClient>>
+public class AutofacRefitClientBuilder<TClient>(ContainerBuilder containerBuilder)
+    : RefitClientBuilder<TClient, AutofacRefitClientBuilder<TClient>, ContainerBuilder>(containerBuilder)
         where TClient : class
 {
-    private readonly ContainerBuilder _containerBuilder;
-
-    public AutofacRefitClientBuilder(ContainerBuilder containerBuilder)
+    public override ContainerBuilder Register()
     {
-        _containerBuilder = containerBuilder;
-    }
-
-    public ContainerBuilder Register()
-    {
-        _containerBuilder.Register(ctx => 
+        _dependencyResolver.Register(ctx =>
         {
             var httpClientFactory = ctx.Resolve<IHttpClientFactory>();
-            var httpClient = CreateHttpClient(httpClientFactory); 
+            var httpClient = CreateHttpClient(httpClientFactory);
 
             var configuration = ctx.Resolve<IConfiguration>();
             ResolveConnectionString(configuration);
@@ -36,8 +29,8 @@ public class AutofacRefitClientBuilder<TClient>
                 client: httpClient,
                 settings: _settings
             );
-       }).As<TClient>().InstancePerLifetimeScope();
+        }).As<TClient>().InstancePerLifetimeScope();
 
-        return _containerBuilder;
+        return _dependencyResolver;
     }
 }

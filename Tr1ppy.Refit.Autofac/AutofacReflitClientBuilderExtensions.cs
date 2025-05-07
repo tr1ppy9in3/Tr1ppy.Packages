@@ -1,7 +1,8 @@
 ﻿using Autofac;
-using Tr1ppy.Refit.Autofac;
 
 namespace Tr1ppy.Refit.Extensions.Autofac;
+
+using Tr1ppy.Refit.Autofac;
 
 public static class AutofacReflitClientBuilderExtensions
 {
