@@ -4,6 +4,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Tr1ppy.Cryptography</Title>
+	<Version>1.0.0</Version>
+	<PackageVersion>1.0.0</PackageVersion>
+	<PackageProjectUrl>https://github.com/tr1ppy9in3/Tr1ppy.Packages</PackageProjectUrl>
+	<RepositoryUrl>https://github.com/tr1ppy9in3/Tr1ppy.Packages</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>

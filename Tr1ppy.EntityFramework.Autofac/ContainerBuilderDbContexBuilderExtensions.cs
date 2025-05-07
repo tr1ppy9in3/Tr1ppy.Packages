@@ -5,7 +5,7 @@ namespace Tr1ppy.EntityFramework.Autofac;
 
 public static class ContainerBuilderEntityFrameworkExtensions
 {
-    public static DbContextInternalOptionsBuilderAutofac<TContext> AddDataContextTest<TContext>(this ContainerBuilder containerBuilder) 
+    public static DbContextInternalOptionsBuilderAutofac<TContext> AddDataContext<TContext>(this ContainerBuilder containerBuilder) 
         where TContext : DbContext
     {
         return new DbContextInternalOptionsBuilderAutofac<TContext>(containerBuilder);

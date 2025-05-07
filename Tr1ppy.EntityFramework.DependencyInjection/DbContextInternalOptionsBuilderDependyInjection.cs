@@ -20,7 +20,7 @@ public sealed class DbContextInternalOptionsBuilderDependyInjection<TContext>
 
     public IServiceCollection Register()
     {
-        _serviceCollection.AddScoped(serviceProvider =>
+        return _serviceCollection.AddScoped(serviceProvider =>
         {
             DbContextOptions<TContext>? dbContextOptions = default;
             if (IsNeedConfiguration)
@@ -35,7 +35,5 @@ public sealed class DbContextInternalOptionsBuilderDependyInjection<TContext>
 
             return (TContext)Activator.CreateInstance(typeof(TContext), dbContextOptions)!;
         });
-
-        return _serviceCollection;
     }
 }

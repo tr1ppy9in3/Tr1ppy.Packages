@@ -7,7 +7,7 @@ namespace Tr1ppy.EntityFramework.DependencyInjection;
 
 public static class ContainerBuilderEntityFrameworkExtensions
 {
-    public static DbContextInternalOptionsBuilderDependyInjection<TContext> AddDataContextTest<TContext>
+    public static DbContextInternalOptionsBuilderDependyInjection<TContext> AddDataContext<TContext>
     (
         this IServiceCollection serviceCollection
     )
