@@ -7,11 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
+    <PackageReference Include="Autofac" Version="8.2.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tr1ppy.Logging\Tr1ppy.Logging.csproj" />
+    <ProjectReference Include="..\Tr1ppy.Autoregistration\Tr1ppy.Autoregistration.csproj" />
   </ItemGroup>
 
 </Project>

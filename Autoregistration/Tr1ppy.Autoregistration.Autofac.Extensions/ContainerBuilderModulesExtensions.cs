@@ -5,17 +5,18 @@ using Microsoft.Extensions.Logging;
 namespace Autofac.Extensions.Modules;
 
 using Tr1ppy.AutoFac.Helpers;
+using Tr1ppy.Autoregistration.Services;
 
 public static class ContainerBuilderModulesExtensions
 {
     public static ContainerBuilder RegisterDomainsModules
     (
         this ContainerBuilder containerBuilder,
-        Action<AssemblyDomainFilterOptions>? configure = null,
+        Action<AssemblySearchFilterOptions>? configure = null,
         ILogger? logger = null
     )
     {
-        var options = new AssemblyDomainFilterOptions();
+        var options = new AssemblySearchFilterOptions();
         configure?.Invoke(options);
 
         List<Type> modulesTypes = [
