@@ -8,11 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="Autofac" Version="8.2.1" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Tr1ppy.Packages.Refit\Tr1ppy.Refit.csproj" />
+    <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="12.3.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
   </ItemGroup>
 
 </Project>

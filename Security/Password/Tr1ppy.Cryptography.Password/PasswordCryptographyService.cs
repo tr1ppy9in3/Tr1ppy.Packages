@@ -3,9 +3,12 @@ using System.Security.Cryptography;
 
 namespace Tr1ppy.Cryptography.Password;
 
-public class PasswordCryptographyService(IOptions<HashPasswordSettings> options)
+public class PasswordCryptographyService
+(
+    IOptions<PasswordCryptographyServiceSettings> options
+)
 {
-    private readonly HashPasswordSettings _settings = options.Value
+    private readonly PasswordCryptographyServiceSettings _settings = options.Value
         ?? throw new ArgumentNullException(nameof(options));
 
     public string HashPassword(string password)
@@ -13,7 +16,7 @@ public class PasswordCryptographyService(IOptions<HashPasswordSettings> options)
         return HashPassword(password, _settings);
     }
 
-    public static string HashPassword(string password, HashPasswordSettings settings)
+    public static string HashPassword(string password, PasswordCryptographyServiceSettings settings)
     {
         byte[] salt = RandomNumberGenerator.GetBytes(settings.SaltSize);
         byte[] hash = Rfc2898DeriveBytes.Pbkdf2
@@ -34,7 +37,7 @@ public class PasswordCryptographyService(IOptions<HashPasswordSettings> options)
         return VerifyPassword(password, hashedPassword, _settings);
     }
 
-    public static bool VerifyPassword(string password, string hashedPassword, HashPasswordSettings settings)
+    public static bool VerifyPassword(string password, string hashedPassword, PasswordCryptographyServiceSettings settings)
     {
 
         string[] parts = hashedPassword.Split('.', 2);
@@ -55,16 +58,4 @@ public class PasswordCryptographyService(IOptions<HashPasswordSettings> options)
 
         return CryptographicOperations.FixedTimeEquals(expectedHash, actualHash);
     }
-}
-
-
-public class HashPasswordSettings
-{
-    public HashAlgorithmName HashAlgorithm { get; set; }
-
-    public int HashSize { get; set; }
-
-    public int SaltSize { get; set; }
-
-    public int IterationsCount { get; set; }
 }

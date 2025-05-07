@@ -1,16 +1,16 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace Tr1ppy.Cryptography.Password.Integration;
+namespace Tr1ppy.Cryptography.Password.Integration.DependencyInjection;
 
-public static class PasswordCryptographyExtensions
+public static class PasswordCryptographyIServiceCollectionExtensions
 {
     public static IServiceCollection AddPasswordCryptography
     (
         this IServiceCollection services,
-        Action<HashPasswordSettings> configure
+        Action<PasswordCryptographyServiceSettings> configure
     )
     {
-        services.Configure<HashPasswordSettings>(configure);
+        services.Configure(configure);
         services.AddSingleton<PasswordCryptographyService>();
         return services;
     }

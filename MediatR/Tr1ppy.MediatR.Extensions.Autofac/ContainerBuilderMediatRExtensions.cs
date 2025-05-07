@@ -8,7 +8,7 @@ namespace Autofac.Extensions.MediatR;
 
 public static class ContainerBuilderMediatRExtensions
 {
-    public static ContainerBuilder AddMediatR_Old
+    public static ContainerBuilder AddMediatR
     (
         this ContainerBuilder containerBuilder, 
         ILogger? logger = default, 

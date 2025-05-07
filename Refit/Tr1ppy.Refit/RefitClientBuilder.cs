@@ -9,7 +9,7 @@ public abstract class RefitClientBuilder<TClient, TBuilder, TDependencyResolver>
 {
     #region Fields
 
-    protected TDependencyResolver _dependencyResolver
+    protected TDependencyResolver _dependencyResolver;
 
     protected string? _httpClientName = default;
     protected Action<HttpClient>? _configureHttpClient = default;
@@ -59,7 +59,7 @@ public abstract class RefitClientBuilder<TClient, TBuilder, TDependencyResolver>
 
     #endregion
 
-    public abstract TDependencyResolver Registerr();
+    public abstract TDependencyResolver Register();
 
     protected HttpClient CreateHttpClient(IHttpClientFactory httpClientFactory)
     {

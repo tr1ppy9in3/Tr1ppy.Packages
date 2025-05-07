@@ -14,7 +14,7 @@
 </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tr1ppy.Logging\Tr1ppy.Logging.csproj" />
+    <ProjectReference Include="..\..\Tr1ppy.Logging\Tr1ppy.Logging.csproj" />
   </ItemGroup>
 
 </Project>
