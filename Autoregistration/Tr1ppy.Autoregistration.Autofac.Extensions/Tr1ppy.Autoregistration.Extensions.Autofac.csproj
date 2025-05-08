@@ -9,10 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Autofac" Version="8.2.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Tr1ppy.Autoregistration\Tr1ppy.Autoregistration.csproj" />
+    <PackageReference Include="Tr1ppy.Autoregistration" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
