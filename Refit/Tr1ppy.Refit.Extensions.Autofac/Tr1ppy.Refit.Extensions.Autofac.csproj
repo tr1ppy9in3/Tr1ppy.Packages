@@ -19,10 +19,7 @@
   <ItemGroup>
     <PackageReference Include="Autofac" Version="8.2.1" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Tr1ppy.Refit\Tr1ppy.Refit.csproj" />
+    <PackageReference Include="Tr1ppy.Refit" Version="1.0.0" />
   </ItemGroup>
 
 </Project>

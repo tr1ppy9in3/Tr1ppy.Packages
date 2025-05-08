@@ -12,7 +12,7 @@
 	 <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	 <RepositoryUrl>https://github.com/tr1ppy9in3/Tr1ppy.Packages</RepositoryUrl>
 	 <RepositoryType>git</RepositoryType>
-	 <Version>1.0.0</Version>
+	 <Version>1.0.1</Version>
 	 <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
@@ -22,9 +22,5 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
 </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Tr1ppy.Logging\Tr1ppy.Logging.csproj" />
-  </ItemGroup>
 
 </Project>
