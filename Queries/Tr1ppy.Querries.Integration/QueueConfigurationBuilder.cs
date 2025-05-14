@@ -2,6 +2,7 @@
 using System;
 
 using Tr1ppy.Queries.Abstractions;
+using Tr1ppy.Queries.Abstractions.Configuration;
 using Tr1ppy.Queries.Abstractions.Context;
 using Tr1ppy.Queries.Abstractions.Proccesors;
 using Tr1ppy.Queries.Integration;
@@ -17,20 +18,7 @@ public class QueueConfigurationBuilder<TPayload, TResult>
 {
     #region Fields
 
-    private int? _capacity;
-    private readonly string _name;
-    private InheritedTypesConfiguration? _typesConfiguration;
-
-    private readonly HashSet<IQueueItemsProvider<TPayload>> _itemsProviders = new();
-
-    private Func<QueueProcessContext<TPayload>, TResult>? _processingFunction;
-    private IQueueProcessor<TPayload, TResult>? _processor;
-
-    private readonly HashSet<Action<QueuePreProcessContext<TPayload>>> _preProcessingActions = new();
-    private readonly HashSet<IQueuePreProcessor<TPayload>> _preProcessors = new();
-
-    private readonly HashSet<Action<QueuePostProcessContext<TPayload, TResult>>> _postProcessingActions = new();
-    private readonly HashSet<IQueuePostProcessor<TPayload, TResult>> _postProcessors = new();
+    private readonly QueryConfiguration<TPayload, TResult> _configuration;
 
     #endregion
 
@@ -42,7 +30,16 @@ public class QueueConfigurationBuilder<TPayload, TResult>
     /// <param name="name"> The unique name of the query. </param>
     public QueueConfigurationBuilder(string name)
     {
-        _name = name;
+        _configuration = new(name);
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="QueueConfigurationBuilder{TPayload, TResult}"/> class.
+    /// </summary>
+    /// <param name="name"> The unique name of the query. </param>
+    public QueueConfigurationBuilder(Enum nameEnum)
+    {
+        _configuration = new(nameEnum);
     }
 
     /// <summary>
@@ -52,14 +49,14 @@ public class QueueConfigurationBuilder<TPayload, TResult>
     /// <returns> The builder instance for method chaining .</returns>
     public QueueConfigurationBuilder<TPayload, TResult> WithCapacity(int capacity)
     {
-        _capacity = capacity;
+        _configuration.Capacity = capacity;
         return this;
     }
 
     public QueueConfigurationBuilder<TPayload, TResult> AddProvider(
-        IQueueItemsProvider<TPayload> provider)
+        BaseItemsProvider<TPayload> provider)
     {
-        _itemsProviders.Add(provider);
+        _configuration.ItemsProviders.Add(provider);
         return this;
     }
 
@@ -71,14 +68,14 @@ public class QueueConfigurationBuilder<TPayload, TResult>
     public QueueConfigurationBuilder<TPayload, TResult> SetProcessing(
         Func<QueueProcessContext<TPayload>, TResult> processingFunction)
     {
-        _processingFunction = processingFunction;
+        _configuration.ItemsProcessingFunction = processingFunction;
         return this;
     }
 
     public QueueConfigurationBuilder<TPayload, TResult> SetProcessing(
         IQueueProcessor<TPayload, TResult> processor)
     {
-        _processor = processor;
+        _configuration.ItemsProcessor = processor;
         return this;
     }
 
@@ -90,14 +87,14 @@ public class QueueConfigurationBuilder<TPayload, TResult>
     public QueueConfigurationBuilder<TPayload, TResult> AddPreProcessing(
         Action<QueuePreProcessContext<TPayload>> preProcessingAction)
     {
-        _preProcessingActions.Add(preProcessingAction);
+        _configuration.ItemsPreProcessingActions.Add(preProcessingAction);
         return this;
     }
 
     public QueueConfigurationBuilder<TPayload, TResult> AddPreProcessing(
         IQueuePreProcessor<TPayload> preProcessor)
     {
-        _preProcessors.Add(preProcessor);
+        _configuration.ItemsPreProcessors.Add(preProcessor);
         return this;
     }
 
@@ -109,14 +106,14 @@ public class QueueConfigurationBuilder<TPayload, TResult>
     public QueueConfigurationBuilder<TPayload, TResult> AddPostProcessing(
         Action<QueuePostProcessContext<TPayload, TResult>> postProcessingAction)
     {
-        _postProcessingActions.Add(postProcessingAction);
+        _configuration.ItemsPostProcessingActions.Add(postProcessingAction);
         return this;
     }
 
     public QueueConfigurationBuilder<TPayload, TResult> AddPostProcessing(
         IQueuePostProcessor<TPayload, TResult> postProcessor)
     {
-        _postProcessors.Add(postProcessor);
+        _configuration.ItemsPostProcessors.Add(postProcessor);
         return this;
     }
 
@@ -132,7 +129,7 @@ public class QueueConfigurationBuilder<TPayload, TResult>
         var builder = new InheritedTypesConfgurationBuilder<TPayload>();
         configure.Invoke(builder);
 
-        _typesConfiguration = builder.Build();
+        _configuration.TypesConfiguration = builder.Build();
         return this;
     }
 
@@ -141,24 +138,7 @@ public class QueueConfigurationBuilder<TPayload, TResult>
     /// </summary>
     /// <returns> The constructed query configuration object. </returns>
     public QueryConfiguration<TPayload, TResult> Build()
-    {
-        return new QueryConfiguration<TPayload, TResult>
-        {
-            Name = _name,
-            Capacity = _capacity,
-            TypesConfiguration = _typesConfiguration,
-            ItemsProviders = _itemsProviders,
-
-            ItemsProcessor = _processor,
-            ItemsProcessingFunction = _processingFunction,
-
-            ItemsPreProcessors = _preProcessors,
-            ItemsPreProcessingActions = _preProcessingActions,
-
-            ItemsPostProcessors = _postProcessors,
-            ItemsPostProcessingActions = _postProcessingActions
-        };
-    }
+        => _configuration;
 
     #endregion
 }

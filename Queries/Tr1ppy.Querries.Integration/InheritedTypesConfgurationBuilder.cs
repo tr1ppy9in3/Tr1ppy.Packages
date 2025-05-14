@@ -1,4 +1,6 @@
-﻿namespace Tr1ppy.Queries.Integration;
+﻿using Tr1ppy.Queries.Abstractions.Configuration;
+
+namespace Tr1ppy.Queries.Integration;
 
 /// <summary>
 /// Builder for configuring which subtypes of a base type should be included or excluded in query processing.

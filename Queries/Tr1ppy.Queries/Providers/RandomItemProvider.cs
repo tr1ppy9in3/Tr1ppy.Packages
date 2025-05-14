@@ -1,9 +1,12 @@
 ﻿using AutoFixture;
+
+using System.Runtime.CompilerServices;
+
 using Tr1ppy.Queries.Abstractions;
 
 namespace Tr1ppy.Queries.Providers;
 
-public class RandomItemProvider<TPaylod> : IQueueItemsProvider<TPaylod>
+public class RandomItemProvider<TPayload> : BaseItemsProvider<TPayload>
 {
     private readonly RandomItemProviderSettings _settings;
 
@@ -12,16 +15,15 @@ public class RandomItemProvider<TPaylod> : IQueueItemsProvider<TPaylod>
         _settings = settings;
     }
 
-    public async IAsyncEnumerable<TPaylod> GetAsync(QueueContext context, CancellationToken cancellationToken = default)
+
+    protected override async IAsyncEnumerable<TPayload> GetItemsAsync(CancellationToken cancellationToken = default)
     {
         var fixture = new Fixture();
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            var fixtureValue = fixture.Create<TPaylod>();
-            Console.WriteLine($"[{context.QueueName}] {context.Count.Value} Produced " + fixtureValue!.ToString());
+            var fixtureValue = fixture.Create<TPayload>();
 
-            context.Count.Increment();
             yield return fixtureValue;
 
             await Task.Delay(_settings.Delay, cancellationToken);

@@ -2,14 +2,17 @@
 using Tr1ppy.Queries.Abstractions.Context;
 using Tr1ppy.Queries.Abstractions.Proccesors;
 
-namespace Tr1ppy.Queries.Integration;
+namespace Tr1ppy.Queries.Abstractions.Configuration;
 
 public class QueryConfiguration<TPayload, TResult>
 {
+
+    #region Fields
+
     /// <summary>
     /// The unique name of the query.
     /// </summary>
-    public required string Name { get; set; }
+    public string Name { get; }
 
     /// <summary>
     /// The optional capacity limit of the queue. 
@@ -17,9 +20,9 @@ public class QueryConfiguration<TPayload, TResult>
     /// </summary>
     public int? Capacity { get; set; }
 
-    public InheritedTypesConfiguration? TypesConfiguration { get; set; }
+    public InheritedTypesConfiguration TypesConfiguration { get; set; } = new();
 
-    public HashSet<IQueueItemsProvider<TPayload>> ItemsProviders { get; set; } = new();
+    public HashSet<BaseItemsProvider<TPayload>> ItemsProviders { get; set; } = new();
 
     #region Processing
 
@@ -81,6 +84,22 @@ public class QueryConfiguration<TPayload, TResult>
     public HashSet<Action<QueuePostProcessContext<TPayload, TResult>>> ItemsPostProcessingActions { get; set; } = new();
 
     public HashSet<IQueuePostProcessor<TPayload, TResult>> ItemsPostProcessors { get; set; } = new();
+
+    #endregion
+
+    #endregion
+
+    #region Constructors 
+
+    public QueryConfiguration(string name)
+    {
+        Name = name;
+    }
+
+    public QueryConfiguration(Enum nameEnum)
+    {
+        Name = nameEnum.ToString();
+    }
 
     #endregion
 

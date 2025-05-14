@@ -2,9 +2,9 @@
 using System.Threading.Channels;
 
 using Tr1ppy.Queries.Abstractions;
+using Tr1ppy.Queries.Abstractions.Configuration;
 using Tr1ppy.Queries.Abstractions.Context;
 using Tr1ppy.Queries.Abstractions.Proccesors;
-using Tr1ppy.Queries.Integration;
 
 namespace Tr1ppy.Queries;
 
@@ -12,11 +12,16 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
 {
     #region Fields
 
-    private readonly QueueContext _context;
+    private readonly string _name;
+    private readonly int? _capacity;
+    private readonly QueueCounter _counter = new();
 
+    private readonly HashSet<Type> _includedSubTypes = new();
+    private readonly HashSet<Type> _excludedSubTypes = new();
+        
     private readonly Channel<TPayload> _channel;
     private readonly IQueueStateStorage<TPayload>? _stateStorage;
-    private readonly HashSet<IQueueItemsProvider<TPayload>> _itemsProviders= new();
+    private readonly HashSet<BaseItemsProvider<TPayload>> _itemsProviders= new();
 
     private readonly IQueueProcessor<TPayload, TResult>? _itemsProcessor;
     private readonly Func<QueueProcessContext<TPayload>, TResult>? _itemsProcessingFunction;
@@ -35,7 +40,7 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
     #region Properies
 
     public int ItemsCount =>
-        _context.Count.Value;
+        _counter.Value;
 
     #endregion
 
@@ -45,12 +50,12 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
     {
         configuration.Validate();
 
-        _context = new QueueContext
-        (
-            name: configuration.Name,
-            capacity: configuration.Capacity,
-            counter: new QueueCounter()
-        );
+        _name = configuration.Name;
+        _capacity = configuration.Capacity;
+
+        _includedSubTypes = configuration.TypesConfiguration.IncludedTypes;
+        _includedSubTypes = configuration.TypesConfiguration.ExcludedTypes;
+
         _stateStorage = null;
         _itemsProviders = configuration.ItemsProviders;
 
@@ -128,9 +133,9 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
 
     #region Private methods
 
-    private async Task RunProviderAsync(IQueueItemsProvider<TPayload> provider)
+    private async Task RunProviderAsync(BaseItemsProvider<TPayload> provider)
     {
-        await foreach (var item in provider.GetAsync(_context, _cancellationTokenSource.Token))
+        await foreach (var item in provider.GetAsync(_counter, _cancellationTokenSource.Token))
         {
             await EnqueueAsync(item);
         }
@@ -138,13 +143,22 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
 
     private async Task RunProcessorAsync()
     {
-        await foreach (var payload in _channel.Reader.ReadAllAsync(_cancellationTokenSource.Token))
+        await foreach (TPayload payload in _channel.Reader.ReadAllAsync(_cancellationTokenSource.Token))
         {
+            Type payloadType = payload.GetType();
+            if (!ShouldProcessPayload(payloadType))
+                continue;
+
+            var context = new QueueContext(_name, _capacity, ItemsCount);
+
             try
             {
-                await PreProcessItemAsync(payload);
-                TResult result = await ProcessItemAsync(payload);
-                await PostProcessItemAsync(payload, result);
+                await PreProcessItemAsync(context, payload);
+
+                TResult result = await ProcessItemAsync(context, payload);
+                _counter.Decrement();
+
+                await PostProcessItemAsync(context, payload, result);
             }
             catch (Exception ex)
             {
@@ -153,9 +167,23 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
         }
     }
 
-    private async Task<TResult> ProcessItemAsync(TPayload payload)
+    private bool ShouldProcessPayload(Type payloadType)
     {
-        var processContext = new QueueProcessContext<TPayload>(_context, payload);
+        if (payloadType == typeof(TPayload))
+            return true;
+
+        if (_includedSubTypes?.Count > 0 && !_includedSubTypes.Contains(payloadType))
+            return false;
+
+        if (_excludedSubTypes?.Contains(payloadType) == true)
+            return false;
+
+        return true;
+    }
+
+    private async Task<TResult> ProcessItemAsync(QueueContext context, TPayload payload)
+    {
+        var processContext = new QueueProcessContext<TPayload>(context, payload);
 
         if (_itemsProcessor is not null)
             return await _itemsProcessor.ProcessAsync(processContext, _cancellationTokenSource.Token);
@@ -167,9 +195,9 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
     }
 
       
-    private async Task PreProcessItemAsync(TPayload payload)
+    private async Task PreProcessItemAsync(QueueContext context, TPayload payload)
     {
-        var preProcessContext = new QueuePreProcessContext<TPayload>(_context, payload);
+        var preProcessContext = new QueuePreProcessContext<TPayload>(context, payload);
         
         if (_itemsPreProcessingActions is not null && _itemsPreProcessingActions.Count > 0)
         {
@@ -181,9 +209,9 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
             await preProcessor.PreProcessAsync(preProcessContext, _cancellationTokenSource.Token);
     }
 
-    private async Task PostProcessItemAsync(TPayload payload, TResult result)
+    private async Task PostProcessItemAsync(QueueContext context, TPayload payload, TResult result)
     {
-        var postProcessContext = new QueuePostProcessContext<TPayload, TResult>(_context, result, payload);
+        var postProcessContext = new QueuePostProcessContext<TPayload, TResult>(context, result, payload);
 
         if (_itemsPostPriccesingActions is not null && _itemsPostPriccesingActions.Count > 0)
         {

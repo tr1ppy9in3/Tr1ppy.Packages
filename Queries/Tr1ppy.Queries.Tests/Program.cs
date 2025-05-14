@@ -14,7 +14,7 @@ internal class Program
         var processor = new TestProcessor();
         var postProcessor = new TestPostProcessor();    
 
-        var provider = new RandomItemProvider<string>(new() { Delay = 1000 });
+        var provider = new RandomItemProvider<string>(new() { Delay = 0 });
 
         var queryBuilder = new QueueConfigurationBuilder<string, int>("object query")
             .WithCapacity(100)
@@ -38,6 +38,7 @@ internal class Program
         public Task PreProcessAsync(QueuePreProcessContext<string> context, CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"Queue preprocess, payload: {context.Payload}");
+            Console.WriteLine(context.ProcessContext.Count);
             return Task.CompletedTask;
         }
     }
@@ -56,8 +57,6 @@ internal class Program
         public async Task PostProcessAsync(QueuePostProcessContext<string, int> context, CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"Queue postprocessor, payload: {context.Payload}, result: {context.Result}");
-
-            await Task.Delay(10000);
         }
     }
 

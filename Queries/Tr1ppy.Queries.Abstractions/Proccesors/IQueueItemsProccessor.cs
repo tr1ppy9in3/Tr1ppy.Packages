@@ -2,6 +2,7 @@
 
 namespace Tr1ppy.Queries.Abstractions.Proccesors;
 
+
 /// <summary>
 /// Defines a processor that handles the core logic for processing items in a queue.
 /// </summary>

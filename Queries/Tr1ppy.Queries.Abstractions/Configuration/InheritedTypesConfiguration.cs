@@ -1,4 +1,4 @@
-﻿namespace Tr1ppy.Queries.Integration;
+﻿namespace Tr1ppy.Queries.Abstractions.Configuration;
 
 public class InheritedTypesConfiguration
 {
