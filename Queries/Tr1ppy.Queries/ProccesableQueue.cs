@@ -1,85 +1,78 @@
-﻿using System.Threading.Channels;
+﻿using System.Diagnostics.Metrics;
+using System.Threading.Channels;
 
 using Tr1ppy.Queries.Abstractions;
+using Tr1ppy.Queries.Abstractions.Context;
 using Tr1ppy.Queries.Abstractions.Proccesors;
+using Tr1ppy.Queries.Integration;
 
 namespace Tr1ppy.Queries;
 
 public class ProccesableQueue<TPayload, TResult> where TPayload : class
 {
-    private readonly string _name;
+    #region Fields
+
+    private readonly QueueContext _context;
 
     private readonly Channel<TPayload> _channel;
     private readonly IQueueStateStorage<TPayload>? _stateStorage;
-    private readonly HashSet<IQueueItemsProvider<TPayload>> _itemsProvider;
+    private readonly HashSet<IQueueItemsProvider<TPayload>> _itemsProviders= new();
 
-    private readonly IQueueProcessor<TPayload, TResult> _itemsProccessor;
+    private readonly IQueueProcessor<TPayload, TResult>? _itemsProcessor;
+    private readonly Func<QueueProcessContext<TPayload>, TResult>? _itemsProcessingFunction;
+
     private readonly HashSet<IQueuePreProcessor<TPayload>> _preProcessors = new();
-    private readonly HashSet<IQueuePostProcessor<TPayload, TResult>> _postProcessors = new();
+    private readonly HashSet<Action<QueuePreProcessContext<TPayload>>> _itemsPreProcessingActions = new();
 
-    private readonly List<Task>? _runningTasks;
+    private readonly HashSet<IQueuePostProcessor<TPayload, TResult>> _postProcessors = new();
+    private readonly HashSet<Action<QueuePostProcessContext<TPayload, TResult>>> _itemsPostPriccesingActions = new();
+
+    private readonly List<Task> _runningTasks = new();
     private readonly CancellationTokenSource _cancellationTokenSource = new();
 
-    public ProccesableQueue
-    (
-        string name,
-        IQueueStateStorage<TPayload>? queueStateStorage,
+    #endregion
 
-        IQueueProcessor<TPayload,TResult> proccessor,
-        IEnumerable<IQueuePreProcessor<TPayload>>? preProcessors,
-        IEnumerable<IQueuePostProcessor<TPayload, TResult>>? postProcessors,
+    #region Properies
 
-        IEnumerable<IQueueItemsProvider<TPayload>> itemsProvider,
-        int? capacity)
+    public int ItemsCount =>
+        _context.Count.Value;
+
+    #endregion
+
+    #region Constructors
+
+    public ProccesableQueue(QueryConfiguration<TPayload, TResult> configuration)
     {
-        _name = name;
-        _stateStorage = queueStateStorage;
-        _itemsProccessor = proccessor;
-        _itemsProvider = itemsProvider.ToHashSet();
+        configuration.Validate();
 
-        if (preProcessors is not null)
-        {
-            EnsureOnlyOneTypePreproccesor(_preProcessors);
-            _preProcessors = preProcessors.ToHashSet();
-        }
+        _context = new QueueContext
+        (
+            name: configuration.Name,
+            capacity: configuration.Capacity,
+            counter: new QueueCounter()
+        );
+        _stateStorage = null;
+        _itemsProviders = configuration.ItemsProviders;
 
-        if (postProcessors is not null)
-        {
-            EnsureOnlyOneTypePostproccesor(_postProcessors);
-            _postProcessors = postProcessors.ToHashSet();
-        }
+        _itemsProcessor = configuration.ItemsProcessor;
+        _itemsProcessingFunction = configuration.ItemsProcessingFunction;
 
-        _channel = capacity is not null
-           ? Channel.CreateBounded<TPayload>(capacity.Value)
+        _itemsPreProcessingActions = configuration.ItemsPreProcessingActions;
+        _preProcessors = configuration.ItemsPreProcessors;
+
+        _itemsPostPriccesingActions = configuration.ItemsPostProcessingActions;
+        _postProcessors = configuration.ItemsPostProcessors;
+
+        _channel = configuration.Capacity is not null
+           ? Channel.CreateBounded<TPayload>(configuration.Capacity.Value)
            : Channel.CreateUnbounded<TPayload>();
     }
 
-    private static void EnsureOnlyOneTypePreproccesor(HashSet<IQueuePreProcessor<TPayload>> preProcessors)
-    {
-        var unique = preProcessors
-            .GroupBy(p => p.GetType())
-            .Select(g => g.First())
-            .ToHashSet();
+    #endregion
 
-        preProcessors.Clear();
-        foreach (var processor in unique)
-            preProcessors.Add(processor);
-    }
+    #region Public methods
 
-
-    private static void EnsureOnlyOneTypePostproccesor(HashSet<IQueuePostProcessor<TPayload, TResult>> postProcessors)
-    {
-        var unique = postProcessors
-            .GroupBy(p => p.GetType())
-            .Select(g => g.First())
-            .ToHashSet();
-
-        postProcessors.Clear();
-        foreach (var processor in unique)
-            postProcessors.Add(processor);
-    }
-
-    public async Task RestoreAsync()
+    public async Task InitializeAsync()
     {
         if (_stateStorage is null)
             return;
@@ -101,55 +94,21 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
 
     public Task StartAsync()
     {
-        foreach (var provider in _itemsProvider)
+        _runningTasks.Add(RunProcessorAsync());
+
+        foreach (var provider in _itemsProviders)
         {
-            _ = Task.Run(async () =>
-            {
-                await foreach (var item in provider.GetAsync(_cancellationTokenSource.Token))
-                {
-                    await EnqueueAsync(item);
-                }
-            }, _cancellationTokenSource.Token);
+            var providerTask = RunProviderAsync(provider);
+            _runningTasks.Add(providerTask);
         }
 
-        _ = Task.Run(async () =>
-        {
-            await foreach (var item in _channel.Reader.ReadAllAsync(_cancellationTokenSource.Token))
-            {
-                try
-                {
-                    await ProcessItemAsync(item);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[Processor] Error: {ex.Message}");
-                }
-            }
-        }, _cancellationTokenSource.Token);
-
         return Task.CompletedTask;
-    }
-
-    private async Task ProcessItemAsync(TPayload payload)
-    {
-        foreach (IQueuePreProcessor<TPayload> preProcessor in _preProcessors)
-            await preProcessor.PreProcessAsync(payload, _cancellationTokenSource.Token);
-
-        TResult result = await _itemsProccessor.ProcessAsync(payload, _cancellationTokenSource.Token);
-
-        foreach(IQueuePostProcessor<TPayload, TResult> postProccesor in _postProcessors)
-            await postProccesor.PostProcessAsync(payload, result, _cancellationTokenSource.Token);
     }
 
     public async Task StopAsync()
     {
         await _cancellationTokenSource.CancelAsync();
-
-        try
-        {
-            _channel.Writer.Complete();
-        }
-        catch { }
+        _channel.Writer.TryComplete();
 
         try
         {
@@ -163,5 +122,79 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
         {
 
         }
-    } 
+    }
+
+    #endregion
+
+    #region Private methods
+
+    private async Task RunProviderAsync(IQueueItemsProvider<TPayload> provider)
+    {
+        await foreach (var item in provider.GetAsync(_context, _cancellationTokenSource.Token))
+        {
+            await EnqueueAsync(item);
+        }
+    }
+
+    private async Task RunProcessorAsync()
+    {
+        await foreach (var payload in _channel.Reader.ReadAllAsync(_cancellationTokenSource.Token))
+        {
+            try
+            {
+                await PreProcessItemAsync(payload);
+                TResult result = await ProcessItemAsync(payload);
+                await PostProcessItemAsync(payload, result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Processor] Error: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task<TResult> ProcessItemAsync(TPayload payload)
+    {
+        var processContext = new QueueProcessContext<TPayload>(_context, payload);
+
+        if (_itemsProcessor is not null)
+            return await _itemsProcessor.ProcessAsync(processContext, _cancellationTokenSource.Token);
+
+        if (_itemsProcessingFunction is not null)
+            return _itemsProcessingFunction.Invoke(processContext);
+
+        throw new ArgumentNullException("Proccesing", "Unable to find available processing action!");
+    }
+
+      
+    private async Task PreProcessItemAsync(TPayload payload)
+    {
+        var preProcessContext = new QueuePreProcessContext<TPayload>(_context, payload);
+        
+        if (_itemsPreProcessingActions is not null && _itemsPreProcessingActions.Count > 0)
+        {
+            foreach (var action in _itemsPreProcessingActions)
+                action.Invoke(preProcessContext);
+        }
+
+        foreach (IQueuePreProcessor<TPayload> preProcessor in _preProcessors)
+            await preProcessor.PreProcessAsync(preProcessContext, _cancellationTokenSource.Token);
+    }
+
+    private async Task PostProcessItemAsync(TPayload payload, TResult result)
+    {
+        var postProcessContext = new QueuePostProcessContext<TPayload, TResult>(_context, result, payload);
+
+        if (_itemsPostPriccesingActions is not null && _itemsPostPriccesingActions.Count > 0)
+        {
+            foreach (var action in _itemsPostPriccesingActions)
+                action.Invoke(postProcessContext);
+        }
+
+        foreach (IQueuePostProcessor<TPayload, TResult> postProccesor in _postProcessors)
+            await postProccesor.PostProcessAsync(postProcessContext, _cancellationTokenSource.Token);
+    }
+    
+
+    #endregion
 }

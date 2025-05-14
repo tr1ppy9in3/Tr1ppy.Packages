@@ -59,6 +59,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tr1ppy.Queries.Abstractions
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tr1ppy.Queries.Tests", "Queries\Tr1ppy.Queries.Tests\Tr1ppy.Queries.Tests.csproj", "{7E4B68B6-7D74-492F-B4B5-084EA0DBC4FF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tr1ppy.Queries.Integration", "Queries\Tr1ppy.Querries.Integration\Tr1ppy.Queries.Integration.csproj", "{080CB0E5-24CE-4920-B98F-4EB5BE0F205E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -145,6 +147,10 @@ Global
 		{7E4B68B6-7D74-492F-B4B5-084EA0DBC4FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7E4B68B6-7D74-492F-B4B5-084EA0DBC4FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7E4B68B6-7D74-492F-B4B5-084EA0DBC4FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{080CB0E5-24CE-4920-B98F-4EB5BE0F205E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{080CB0E5-24CE-4920-B98F-4EB5BE0F205E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{080CB0E5-24CE-4920-B98F-4EB5BE0F205E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{080CB0E5-24CE-4920-B98F-4EB5BE0F205E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -169,6 +175,7 @@ Global
 		{6F45C7C7-42CF-4BDE-BEBC-2004BE16BCF1} = {0F1A7B8F-9C18-4AF7-AC32-26413DB0A1C3}
 		{28CBA26B-0D5F-4952-838E-9F26F04B4EFE} = {0F1A7B8F-9C18-4AF7-AC32-26413DB0A1C3}
 		{7E4B68B6-7D74-492F-B4B5-084EA0DBC4FF} = {0F1A7B8F-9C18-4AF7-AC32-26413DB0A1C3}
+		{080CB0E5-24CE-4920-B98F-4EB5BE0F205E} = {0F1A7B8F-9C18-4AF7-AC32-26413DB0A1C3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DDAFCFDE-F29C-48DC-90C7-9002EF016D9C}

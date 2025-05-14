@@ -1,106 +1,80 @@
-﻿using System.Collections.Concurrent;
-
-using Tr1ppy.Queries.Abstractions;
-using Tr1ppy.Queries.Abstractions.Proccesors;
-using Tr1ppy.Queries.Proccesors.Postproccesors;
-using Tr1ppy.Queries.Proccesors.Preprocessors;
+﻿using Tr1ppy.Queries.Abstractions.Proccesors;
 using Tr1ppy.Queries.Providers;
+using Tr1ppy.Querries.Integration;
+using Tr1ppy.Queries.Abstractions.Context;
+using System.Runtime.InteropServices;
 
 namespace Tr1ppy.Queries.Tests;
 
 internal class Program
 {
-    const int itemsPerWriter = 10;
-    const int writersCount = 3;
-    const int totalMessages = itemsPerWriter * writersCount;
-
     static async Task Main(string[] args)
     {
-        //var source = new InMemoryQueueSource<string>();
+        var preProcessor = new TestPreProcessor();
+        var processor = new TestProcessor();
+        var postProcessor = new TestPostProcessor();    
 
+        var provider = new RandomItemProvider<string>(new() { Delay = 1000 });
 
-        //_ = Task.Run(async () =>
-        //{
-        //    for (int i = 1; i <= 5; i++)
-        //    {
-        //        await source.SaveAsync($"Command {i}");
-        //        Console.WriteLine(i);
-        //    }
-        //});
+        var queryBuilder = new QueueConfigurationBuilder<string, int>("object query")
+            .WithCapacity(100)
+            .AddProvider(provider)
+            .AddPreProcessing(preProcessor)
+            .AddPostProcessing(postProcessor)
+            .SetProcessing(processor);
 
-        //_ = Task.Run(async () =>
-        //{
-        //    for (int i = 5; i <= 10; i++)
-        //    {
-        //        await source.SaveAsync($"Command {i}");
-        //        Console.WriteLine(i);
-        //    }
-        //});
+        var queryConfiguration = queryBuilder.Build();
 
-        //_ = Task.Run(async () =>
-        //{
-        //    for (int i = 15; i <= 20; i++)
-        //    {
-        //        await source.SaveAsync($"Command {i}");
-        //        Console.WriteLine(i);
-        //    }
-        //});
+        var query = new ProccesableQueue<string, int>(queryConfiguration);
+        await query.StartAsync();
+        await Task.Delay(1001);
+        Console.WriteLine(query.ItemsCount);
+        Console.ReadKey();
 
-
-
-        //var reader1 = Task.Run(async () => 
-        //{
-
-        //    await foreach (var item in source.ReadAsync())
-        //    {
-        //        Console.WriteLine($"[Reader 1] Readed {item.Id}");
-        //    }
-        //});
-
-        //var reader2 = Task.Run(async () =>
-        //{
-
-        //    await foreach (var item in source.ReadAsync())
-        //    {
-        //        Console.WriteLine($"[Reader 2] Readed {item.Id}");
-        //    }
-        //});
-
-        //await Task.WhenAll(reader1 , reader2);
-
-        var settings = new RandomItemProviderSettings() { Delay = 1000 };
-        var provider = new RandomItemProvider<string>(settings);
-        var loggingPreProccesor = new LoggingPrepocessor<string>();
-        var loggingPreProccesor2 = new LoggingPrepocessor<string>();
-        var loggingPostProccesor = new LoggingPostProcessor<string, int>();
-        var loggingPostProccesor2 = new LoggingPostProcessor<string, int>();
-
-        var queueEngine = new ProccesableQueue<string, int>
-        (
-            name: "First queue",
-            capacity: 100,
-            queueStateStorage: null,
-            proccessor: new StringProccesor(),
-            preProcessors: [loggingPreProccesor, loggingPreProccesor2],
-            postProcessors: [loggingPostProccesor, loggingPostProccesor2],
-            itemsProvider: [provider]
-        );
-
-        await queueEngine.StartAsync();
-        Console.ReadLine();
     }
-}
 
-
-class StringProccesor : IQueueProcessor<string, int>
-{
-    public async Task<int> ProcessAsync(string payload, CancellationToken cancellationToken)
+    class TestPreProcessor : IQueuePreProcessor<string>
     {
-        Console.WriteLine("Processing" + payload);
+        public Task PreProcessAsync(QueuePreProcessContext<string> context, CancellationToken cancellationToken = default)
+        {
+            Console.WriteLine($"Queue preprocess, payload: {context.Payload}");
+            return Task.CompletedTask;
+        }
+    }
 
-        await Task.Delay(5000);
+    class TestProcessor : IQueueProcessor<string, int>
+    {
+        public Task<int> ProcessAsync(QueueProcessContext<string> context, CancellationToken cancellationToken = default)
+        {
+            Console.WriteLine($"Queue process, payload: {context.Payload}");
+            return Task.FromResult(1);
+        }
+    }
+
+    class TestPostProcessor : IQueuePostProcessor<string, int>
+    {
+        public async Task PostProcessAsync(QueuePostProcessContext<string, int> context, CancellationToken cancellationToken = default)
+        {
+            Console.WriteLine($"Queue postprocessor, payload: {context.Payload}, result: {context.Result}");
+
+            await Task.Delay(10000);
+        }
+    }
+
+
+    static void TestPreProcessingAction(QueuePreProcessContext<string> ctx)
+    {
+        Console.WriteLine("Preprocessing action");
+    }
+
+    static int TestProcessingAction(QueueProcessContext<string> ctx)
+    {
+        Console.WriteLine("Processing action");
         return 1;
     }
+
+    static void TestPostProcessingAction(QueuePostProcessContext<string, int> ctx)
+    {
+        Console.WriteLine("Postprocessing action");
+    }
 }
-
-
