@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Tr1ppy.Queries\Tr1ppy.Queries.csproj" />
+    <ProjectReference Include="..\Tr1ppy.Querries.Integration\Tr1ppy.Queries.Integration.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	  <Title>$(AssemblyName)</Title>
+	  <Description>Empty description</Description>
+	  <Authors>Tr1ppy</Authors>
+	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+	  <RepositoryUrl>https://github.com/tr1ppy9in3/Tr1ppy.Packages</RepositoryUrl>
+	  <RepositoryType>git</RepositoryType>
+	  <Version>0.0.2</Version>
+	  <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tr1ppy.Queries\Tr1ppy.Queries.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,67 +1,79 @@
-﻿using System.Collections.Concurrent;
-
-using Tr1ppy.Queries.Abstractions;
+﻿using Tr1ppy.Queries.Abstractions.Proccesors;
+using Tr1ppy.Queries.Providers;
+using Tr1ppy.Querries.Integration;
+using Tr1ppy.Queries.Abstractions.Context;
+using System.Runtime.InteropServices;
 
 namespace Tr1ppy.Queries.Tests;
 
 internal class Program
 {
-    const int itemsPerWriter = 10;
-    const int writersCount = 3;
-    const int totalMessages = itemsPerWriter * writersCount;
-
     static async Task Main(string[] args)
     {
-        var source = new InMemoryQueueSource<string>();
+        var preProcessor = new TestPreProcessor();
+        var processor = new TestProcessor();
+        var postProcessor = new TestPostProcessor();    
 
-        
-        _ = Task.Run(async () =>
+        var provider = new RandomItemProvider<string>(new() { Delay = 0 });
+
+        var queryBuilder = new QueueConfigurationBuilder<string, int>("object query")
+            .WithCapacity(100)
+            .AddProvider(provider)
+            .AddPreProcessing(preProcessor)
+            .AddPostProcessing(postProcessor)
+            .SetProcessing(processor);
+
+        var queryConfiguration = queryBuilder.Build();
+
+        var query = new ProccesableQueue<string, int>(queryConfiguration);
+        await query.StartAsync();
+        await Task.Delay(1001);
+        Console.WriteLine(query.ItemsCount);
+        Console.ReadKey();
+
+    }
+
+    class TestPreProcessor : IQueuePreProcessor<string>
+    {
+        public Task PreProcessAsync(QueuePreProcessContext<string> context, CancellationToken cancellationToken = default)
         {
-            for (int i = 1; i <= 5; i++)
-            {
-                await source.SaveAsync($"Command {i}");
-                Console.WriteLine(i);
-            }
-        });
+            Console.WriteLine($"Queue preprocess, payload: {context.Payload}");
+            Console.WriteLine(context.ProcessContext.Count);
+            return Task.CompletedTask;
+        }
+    }
 
-        _ = Task.Run(async () =>
+    class TestProcessor : IQueueProcessor<string, int>
+    {
+        public Task<int> ProcessAsync(QueueProcessContext<string> context, CancellationToken cancellationToken = default)
         {
-            for (int i = 5; i <= 10; i++)
-            {
-                await source.SaveAsync($"Command {i}");
-                Console.WriteLine(i);
-            }
-        });
+            Console.WriteLine($"Queue process, payload: {context.Payload}");
+            return Task.FromResult(1);
+        }
+    }
 
-        _ = Task.Run(async () =>
+    class TestPostProcessor : IQueuePostProcessor<string, int>
+    {
+        public async Task PostProcessAsync(QueuePostProcessContext<string, int> context, CancellationToken cancellationToken = default)
         {
-            for (int i = 15; i <= 20; i++)
-            {
-                await source.SaveAsync($"Command {i}");
-                Console.WriteLine(i);
-            }
-        });
+            Console.WriteLine($"Queue postprocessor, payload: {context.Payload}, result: {context.Result}");
+        }
+    }
 
 
+    static void TestPreProcessingAction(QueuePreProcessContext<string> ctx)
+    {
+        Console.WriteLine("Preprocessing action");
+    }
 
-        var reader1 = Task.Run(async () => 
-        {
+    static int TestProcessingAction(QueueProcessContext<string> ctx)
+    {
+        Console.WriteLine("Processing action");
+        return 1;
+    }
 
-            await foreach (var item in source.ReadAsync())
-            {
-                Console.WriteLine($"[Reader 1] Readed {item.Id}");
-            }
-        });
-
-        var reader2 = Task.Run(async () =>
-        {
-
-            await foreach (var item in source.ReadAsync())
-            {
-                Console.WriteLine($"[Reader 2] Readed {item.Id}");
-            }
-        });
-
-        await Task.WhenAll(reader1 , reader2);
+    static void TestPostProcessingAction(QueuePostProcessContext<string, int> ctx)
+    {
+        Console.WriteLine("Postprocessing action");
     }
 }
