@@ -5,7 +5,7 @@
 /// Used to durably save and restore queue elements across application restarts or failures.
 /// </summary>
 /// <typeparam name="TPayload">The type of the queue elements.</typeparam>
-public interface IQueueStateStorage<TPayload> where TPayload : class
+public interface IQueueStateStorage<TPayload> 
 {
     /// <summary>
     /// Persists a single queue element to the state storage.
@@ -60,4 +60,10 @@ public interface IQueueStateStorage<TPayload> where TPayload : class
     Task<IEnumerable<TPayload>> RestoreAsync(
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    Task<bool> HaveSavedStateAsync();
 }

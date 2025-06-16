@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.Metrics;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
 namespace Tr1ppy.Queries.Abstractions;
 

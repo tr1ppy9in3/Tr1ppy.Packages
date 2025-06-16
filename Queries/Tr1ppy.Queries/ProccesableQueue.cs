@@ -5,12 +5,18 @@ using Tr1ppy.Queries.Abstractions;
 using Tr1ppy.Queries.Abstractions.Configuration;
 using Tr1ppy.Queries.Abstractions.Context;
 using Tr1ppy.Queries.Abstractions.Proccesors;
+using Tr1ppy.Querries.Integration;
 
 namespace Tr1ppy.Queries;
 
-public class ProccesableQueue<TPayload, TResult> where TPayload : class
+/// <summary>
+/// Represents a processable queue with support for type filtering, 
+/// pre-processing, post-processing, state persistence, and external item providers.
+/// </summary>
+/// <typeparam name="TPayload"> The type of items processed by the queue. </typeparam>
+/// <typeparam name="TResult"> The result type produced after processing each item. </typeparam>
+public class ProccesableQueue<TPayload, TResult>
 {
-    #region Fields
 
     private readonly string _name;
     private readonly int? _capacity;
@@ -35,17 +41,42 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
     private readonly List<Task> _runningTasks = new();
     private readonly CancellationTokenSource _cancellationTokenSource = new();
 
-    #endregion
 
     #region Properies
 
+    /// <summary>
+    /// Gets the name of the queue.
+    /// </summary>
+    public string Name =>
+        _name;
+
+    /// <summary>
+    /// Gets the number of items currently pending.
+    /// </summary>
     public int ItemsCount =>
         _counter.Value;
+
+    /// <summary>
+    /// Gets the explicitly included types that this queue supports.
+    /// </summary>
+    public HashSet<Type> IncludedSubTypes =>
+        _includedSubTypes;
+
+    /// <summary>
+    /// Gets the explicitly excluded types that this queue will ignore.
+    /// </summary>
+    public HashSet<Type> ExcludedSubTypes =>
+        _excludedSubTypes;
 
     #endregion
 
     #region Constructors
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ProccesableQueue{TPayload, TResult}"/> class
+    /// using the specified configuration.
+    /// </summary>
+    /// <param name="configuration"> The configuration that defines processing logic and settings. </param>
     public ProccesableQueue(QueryConfiguration<TPayload, TResult> configuration)
     {
         configuration.Validate();
@@ -54,7 +85,7 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
         _capacity = configuration.Capacity;
 
         _includedSubTypes = configuration.TypesConfiguration.IncludedTypes;
-        _includedSubTypes = configuration.TypesConfiguration.ExcludedTypes;
+        _excludedSubTypes = configuration.TypesConfiguration.ExcludedTypes;
 
         _stateStorage = null;
         _itemsProviders = configuration.ItemsProviders;
@@ -73,10 +104,23 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
            : Channel.CreateUnbounded<TPayload>();
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ProccesableQueue{TPayload, TResult}"/> class
+    /// using the specified configuration builder.
+    /// </summary>
+    /// <param name="configurationBuilder"> The configuration builder. </param>
+    public ProccesableQueue(QueueConfigurationBuilder<TPayload, TResult> configurationBuilder)
+        : this(configurationBuilder.Build())
+    {
+    }
+
     #endregion
 
     #region Public methods
 
+    /// <summary>
+    /// Restores items from persistent storage (if enabled) into the queue.
+    /// </summary>
     public async Task InitializeAsync()
     {
         if (_stateStorage is null)
@@ -89,27 +133,36 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
         }
     }
 
-    public async Task EnqueueAsync(TPayload item)
+    /// <summary>
+    /// Enqueues a payload into the queue, persisting it if required.
+    /// </summary>
+    /// <param name="payload"> The payload to enqueue. </param>
+    public async Task EnqueueAsync(TPayload payload)
     {
-        if (_stateStorage is not null)
-           await _stateStorage.PersistAsync(item, _cancellationTokenSource.Token);
+        if (payload is null)
+            return;
 
-        await _channel.Writer.WriteAsync(item, _cancellationTokenSource.Token);
+        if (!IsSupportType(payload.GetType()))
+            return;
+
+        if (_stateStorage is not null)
+           await _stateStorage.PersistAsync(payload, _cancellationTokenSource.Token);
+
+        await _channel.Writer.WriteAsync(payload, _cancellationTokenSource.Token);
     }
 
-    public Task StartAsync()
+    /// <summary>
+    /// Starts the queue processor and all configured item providers.
+    /// </summary>
+    public void Start()
     {
         _runningTasks.Add(RunProcessorAsync());
-
-        foreach (var provider in _itemsProviders)
-        {
-            var providerTask = RunProviderAsync(provider);
-            _runningTasks.Add(providerTask);
-        }
-
-        return Task.CompletedTask;
+        _runningTasks.AddRange(_itemsProviders.Select(RunProviderAsync));
     }
 
+    /// <summary>
+    /// Stops processing, cancels all tasks, and completes the queue channel.
+    /// </summary>
     public async Task StopAsync()
     {
         await _cancellationTokenSource.CancelAsync();
@@ -129,6 +182,28 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
         }
     }
 
+    /// <summary>
+    /// Checks whether a given type is supported by the queue based on include/exclude filters.
+    /// </summary>
+    /// <param name="type">The actual type of the payload.</param>
+    /// <returns> <see langword="true"/> if the type is supported, otherwise <see langword="false"/>. </returns>
+    public bool IsSupportType(Type type)
+    {
+        if (type is null)
+            return false;
+
+        if (type == typeof(TPayload))
+            return true;
+
+        if (_excludedSubTypes.Contains(type))
+            return false;
+
+        if (_includedSubTypes.Count > 0 && !_includedSubTypes.Contains(type))
+            return false;
+
+        return true;
+    }
+
     #endregion
 
     #region Private methods
@@ -143,10 +218,16 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
 
     private async Task RunProcessorAsync()
     {
+        if (_itemsProcessor is null && _itemsProcessingFunction is null)
+            return;
+
         await foreach (TPayload payload in _channel.Reader.ReadAllAsync(_cancellationTokenSource.Token))
         {
+            if (payload is null)
+                return;
+
             Type payloadType = payload.GetType();
-            if (!ShouldProcessPayload(payloadType))
+            if (!IsSupportType(payloadType))
                 continue;
 
             var context = new QueueContext(_name, _capacity, ItemsCount);
@@ -165,20 +246,6 @@ public class ProccesableQueue<TPayload, TResult> where TPayload : class
                 Console.WriteLine($"[Processor] Error: {ex.Message}");
             }
         }
-    }
-
-    private bool ShouldProcessPayload(Type payloadType)
-    {
-        if (payloadType == typeof(TPayload))
-            return true;
-
-        if (_includedSubTypes?.Count > 0 && !_includedSubTypes.Contains(payloadType))
-            return false;
-
-        if (_excludedSubTypes?.Contains(payloadType) == true)
-            return false;
-
-        return true;
     }
 
     private async Task<TResult> ProcessItemAsync(QueueContext context, TPayload payload)
