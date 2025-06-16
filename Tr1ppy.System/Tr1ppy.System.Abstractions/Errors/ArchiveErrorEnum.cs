@@ -1,0 +1,18 @@
+﻿namespace Tr1ppy.System.Abstractions.Errors;
+
+public enum ArchiveErrorEnum
+{
+    UNKNOWN_ARCHIVE_ERROR,
+
+    TARGET_ARCHIVE_NOT_FOUND,       
+    EXTRACTION_DIRECTORY_NOT_FOUND, 
+    INVALID_ARGUMENT_PATH,          
+
+    INVALID_OR_CORRUPTED_ARCHIVE,  
+    EMPTY_ARCHIVE_CONTENT,        
+
+    ARCHIVE_ACCESS_DENIED, 
+    ARCHIVE_OPERATION_CANCELLED,
+    EXTRACTION_WRITE_FAILED,     
+    DIRECTORY_CREATION_FAILED,           
+}

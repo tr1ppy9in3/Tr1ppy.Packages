@@ -3,6 +3,8 @@ using Tr1ppy.Queries.Providers;
 using Tr1ppy.Querries.Integration;
 using Tr1ppy.Queries.Abstractions.Context;
 using System.Runtime.InteropServices;
+using AutoFixture;
+using Tr1ppy.Queries.Integration;
 
 namespace Tr1ppy.Queries.Tests;
 
@@ -10,32 +12,54 @@ internal class Program
 {
     static async Task Main(string[] args)
     {
-        var preProcessor = new TestPreProcessor();
-        var processor = new TestProcessor();
-        var postProcessor = new TestPostProcessor();    
+        var typedBuilder = new TypedQueryConfigurationBuilder<string, int>(string.Empty)
+            .AddPreProcessor<TestPreProcessor<string>>()
+            .SetProcessor<TestProcessor<string, int>>()
+            .AddPostProcessor<TestPostProcessor<string, int>>();
 
-        var provider = new RandomItemProvider<string>(new() { Delay = 0 });
 
-        var queryBuilder = new QueueConfigurationBuilder<string, int>("object query")
-            .WithCapacity(100)
-            .AddProvider(provider)
-            .AddPreProcessing(preProcessor)
-            .AddPostProcessing(postProcessor)
-            .SetProcessing(processor);
 
-        var queryConfiguration = queryBuilder.Build();
+        //var preProcessor = new TestPreProcessor<object>();
+        //var processor = new TestProcessor<object, int>();
+        //var postProcessor = new TestPostProcessor<object, int>();    
+        //var provider = new RandomItemProvider<object>(new() { Delay = 0 });
+        //var queryBuilder = new QueueConfigurationBuilder<object, int>("object query1")
+        //    .WithCapacity(100)
+        //    .AddPreProcessing(preProcessor)
+        //    .AddPostProcessing(postProcessor)
+        //    .SetProcessing(processor);
 
-        var query = new ProccesableQueue<string, int>(queryConfiguration);
-        await query.StartAsync();
-        await Task.Delay(1001);
-        Console.WriteLine(query.ItemsCount);
-        Console.ReadKey();
+        //var queryConfiguration1 = queryBuilder.Build();
+        //var query1 = new ProccesableQueue<object, int>(queryConfiguration1);
 
+        //var preProcessor2 = new TestPreProcessor<object>();
+        //var processor2 = new TestProcessor<object, int>();
+        //var postProcessor2 = new TestPostProcessor<object, int>();
+        //var provider2 = new RandomItemProvider<object>(new() { Delay = 0 });
+        //var queryBuilder2 = new QueueConfigurationBuilder<object, int>("object query2")
+        //    .WithCapacity(100)
+        //    .ConfigureTypes(opts =>
+        //    {
+        //        opts.IncludeSubtype<string>();
+        //    })
+        //    .AddPreProcessing(preProcessor2)
+        //    .AddPostProcessing(postProcessor2)
+        //    .SetProcessing(processor2);
+
+        //var queryConfiguration2 = queryBuilder2.Build();
+        //var query2 = new ProccesableQueue<object, int>(queryConfiguration2);
+
+        //List<ProccesableQueue<object, int>> list = new() { query2, query1 };
+        //var queryAccessor = new QueryAccessor<object, int>(list);
+
+        //await queryAccessor.EnqueueAsync(string.Empty);
+        //await queryAccessor.EnqueueAsync(new object());
+        //await queryAccessor.EnqueueAsync(new object(), "object query1");
     }
 
-    class TestPreProcessor : IQueuePreProcessor<string>
+    class TestPreProcessor<TPayload> : IQueuePreProcessor<TPayload>
     {
-        public Task PreProcessAsync(QueuePreProcessContext<string> context, CancellationToken cancellationToken = default)
+        public Task PreProcessAsync(QueuePreProcessContext<TPayload> context, CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"Queue preprocess, payload: {context.Payload}");
             Console.WriteLine(context.ProcessContext.Count);
@@ -43,20 +67,23 @@ internal class Program
         }
     }
 
-    class TestProcessor : IQueueProcessor<string, int>
+    class TestProcessor<TPayload, TResult> : IQueueProcessor<TPayload, TResult>
     {
-        public Task<int> ProcessAsync(QueueProcessContext<string> context, CancellationToken cancellationToken = default)
+        public Task<TResult> ProcessAsync(QueueProcessContext<TPayload> context, CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"Queue process, payload: {context.Payload}");
-            return Task.FromResult(1);
+            var fixture = new Fixture();
+
+            return Task.FromResult(fixture.Create<TResult>());
         }
     }
 
-    class TestPostProcessor : IQueuePostProcessor<string, int>
+    class TestPostProcessor<TPayload, TResult> : IQueuePostProcessor<TPayload, TResult>
     {
-        public async Task PostProcessAsync(QueuePostProcessContext<string, int> context, CancellationToken cancellationToken = default)
+        public Task PostProcessAsync(QueuePostProcessContext<TPayload, TResult> context, CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"Queue postprocessor, payload: {context.Payload}, result: {context.Result}");
+            return Task.CompletedTask;
         }
     }
 
