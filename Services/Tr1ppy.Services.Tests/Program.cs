@@ -12,8 +12,7 @@ internal class Program
     {
         IServiceCollection services = new ServiceCollection();
 
-        //services.AddAttributedServices(assemblies: Assembly.GetExecutingAssembly());
-        services.AddScoped<IFoo, Foo>();
+        services.AddAttributedServices(assemblies: Assembly.GetExecutingAssembly());
 
         var serviceProvider = services.BuildServiceProvider();
         using var scope = serviceProvider.CreateScope();

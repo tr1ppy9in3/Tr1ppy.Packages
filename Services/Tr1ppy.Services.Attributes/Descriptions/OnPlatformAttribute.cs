@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Tr1ppy.Services.Attributes;
+namespace Tr1ppy.Services.Attributes.Descriptions;
 
 /// <summary>
 /// Specifies supported operating system platforms.
@@ -47,7 +47,7 @@ internal static class SupportOsPlatformExtensions
 
 
         if (supportedOsPlatform.HasFlag(SupportedOSPlatform.Windows))
-            yield return OSPlatform.OSX;
+            yield return OSPlatform.Windows;
 
         if (supportedOsPlatform.HasFlag(SupportedOSPlatform.Linux))
             yield return OSPlatform.Linux;

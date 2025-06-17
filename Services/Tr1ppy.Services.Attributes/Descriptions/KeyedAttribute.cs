@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Tr1ppy.Services.Attributes;
+namespace Tr1ppy.Services.Attributes.Descriptions;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
 public class KeyedAttribute(object key) : Attribute

@@ -9,6 +9,8 @@ public static class ServiceLifetimeMapper
             Attributes.ServiceLifetime.Singleton => Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton,
             Attributes.ServiceLifetime.Scoped => Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped,
             Attributes.ServiceLifetime.Transient => Microsoft.Extensions.DependencyInjection.ServiceLifetime.Transient,
+            _ => throw new ArgumentOutOfRangeException(nameof(lifetime), $"Unsupported lifetime: {lifetime}")
         };
+
     }
 }
