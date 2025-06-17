@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -13,6 +12,7 @@
 	<RepositoryType>git</RepositoryType>
 	<Version>1.0.0</Version>
 	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+	<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	<NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
-
 </Project>
