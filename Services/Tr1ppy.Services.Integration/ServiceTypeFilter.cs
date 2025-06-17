@@ -165,8 +165,15 @@ public static class ServiceTypeFilter
         }
 
         Type? currentTypeInHierarchy = serviceType;
-        while (currentTypeInHierarchy != null && currentTypeInHierarchy != typeof(object))
+        while (currentTypeInHierarchy is not null && currentTypeInHierarchy != typeof(object))
         {
+            var implementedInterfaces = currentTypeInHierarchy.GetInterfaces();
+            foreach (var interfaceType in implementedInterfaces)
+            {
+                if (!IsExcluded(interfaceType))
+                    typesToRegister.Add(interfaceType);
+            }
+
             if (!currentTypeInHierarchy.IsAbstract)
             {
                 currentTypeInHierarchy = currentTypeInHierarchy.BaseType;
@@ -175,13 +182,6 @@ public static class ServiceTypeFilter
 
             if (!IsExcluded(currentTypeInHierarchy)) 
                 typesToRegister.Add(currentTypeInHierarchy);
-
-            var implementedInterfaces = currentTypeInHierarchy.GetInterfaces();
-            foreach (var interfaceType in implementedInterfaces)
-            {
-                if (!IsExcluded(interfaceType))
-                    typesToRegister.Add(interfaceType);
-            }
 
             currentTypeInHierarchy = currentTypeInHierarchy.BaseType;
         }
