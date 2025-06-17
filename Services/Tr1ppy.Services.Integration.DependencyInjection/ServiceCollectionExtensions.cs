@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 
 using Tr1ppy.Services.Attributes;
+using Tr1ppy.Services.Attributes.Descriptions;
 
 namespace Tr1ppy.Services.Integration.DependencyInjection;
 
@@ -23,32 +24,30 @@ public static class ServiceCollectionExtensions
 
         foreach (Type autoregisterService in autoregistredServicesTypes)
         {
-            var platformAttrbute = autoregisterService.GetCustomAttribute<OnPlatformAttribute>();
-            if (platformAttrbute is not null && !platformAttrbute.IsSupportByCurrentPlatform(autoregisterService))
+            if (ServiceAttributeResolver.HavePlatfromAttributeAndNotSupportedOnCurrent(autoregisterService))
                 continue;
 
             if (RegisteredServices.Contains(autoregisterService))
                 continue;
 
             AutoregisteredServiceAttribute attribute = autoregisterService.GetCustomAttribute<AutoregisteredServiceAttribute>()!;
-            Type[] interfaces = autoregisterService.GetInterfaces();
-            switch (interfaces.Length)
+            Type[] abstractions = ServiceTypeFilter.GetAbstractionsToRegister(autoregisterService).ToArray();
+            switch (abstractions.Length)
             {
                 case 0:
-                    RegisterServiceWithoutInterfaces(services, attribute, autoregisterService);
+                    RegisterServiceWithoutAbstraction(services, attribute, autoregisterService);
                     break;
 
-                case 1:
-                    RegisterServiceWithOneInterface(services, attribute, autoregisterService, interfaces.First());
-                    break;
+                case > 0:
+                    foreach (Type abstraction in abstractions)
+                        RegisterServiceWithOneAbstraction(services, attribute, autoregisterService, abstraction);
 
-                case > 1:
-                    logger?.LogWarning($"Skipped {autoregisterService.Name}: multiple interfaces found.");
                     break;
             }
 
             RegisteredServices.Add(autoregisterService);
         }
+        
         return services;
     }
 
@@ -71,7 +70,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static void RegisterServiceWithoutInterfaces(
+    private static void RegisterServiceWithoutAbstraction(
         IServiceCollection services,
         AutoregisteredServiceAttribute attribute,
         Type serviceType
@@ -87,15 +86,15 @@ public static class ServiceCollectionExtensions
         services.Add(serviceDescriptor);
     }
 
-    private static void RegisterServiceWithOneInterface(
+    private static void RegisterServiceWithOneAbstraction(
         IServiceCollection services, 
         AutoregisteredServiceAttribute attribute,
         Type serviceType, 
-        Type interfaceType
+        Type abstractionType
     )
     {
         ServiceDescriptor serviceDescriptor = new(
-            serviceType: interfaceType,
+            serviceType: abstractionType,
             implementationType: serviceType, 
             serviceKey: KeyedAttribute.GetKeyFromType(serviceType), 
             lifetime: ServiceLifetimeMapper.Map(attribute.Lifetime)

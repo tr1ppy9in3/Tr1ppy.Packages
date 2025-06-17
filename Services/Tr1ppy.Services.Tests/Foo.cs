@@ -1,13 +1,13 @@
 ﻿using Tr1ppy.Services.Attributes;
+using Tr1ppy.Services.Attributes.Descriptions;
 
 namespace Tr1ppy.Services.Tests;
 
-[Keyed("allah")]
 [OnPlatform(SupportedOSPlatform.All)]
 [AutoregisteredService(ServiceLifetime.Scoped)]
-internal class Foo : IFoo
+internal class Foo : BaseFoo
 {
-    public void Bar()
+    public override void Bar()
     {
         Console.WriteLine("BAR");
     }
